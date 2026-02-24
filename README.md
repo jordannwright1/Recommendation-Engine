@@ -1,4 +1,5 @@
 # 🎵 VibeMatch AI: Dual-Model Music Discovery Engine
+[https://recommendation-engine-hvgabpdv76g4cl3wrysqjm.streamlit.app/](url)
 
 ## 📌 The Problem
 Traditional music recommendation systems often focus strictly on "Vibe" (sonic similarity) or "Popularity" (current charts). This creates a gap where a user might find a similar-sounding song that lacks the structural "DNA" of a successful track. **VibeMatch AI** bridges this gap by combining **Unsupervised Learning** for discovery and **Supervised Learning** for commercial risk assessment.
