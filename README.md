@@ -34,4 +34,61 @@ To address a **75/25 class imbalance** (Non-Hits vs. Hits), the following strate
 ### **Feature Importance**
 Through model interpretation, it was determined that **Artist Presence** and **Energy** were the primary drivers of commercial success, whereas features like "Positivity" (Valence) had a negligible impact on a song's hit probability in the current market.
 
+## 🛠️ Data Engineering & Pipeline
+
+### **BigQuery Integration & Scalability**
+Before model training, the raw dataset was processed using **Google BigQuery**. This allowed for efficient handling of 56,000+ records and ensured data integrity through SQL-based transformation.
+
+* **Data Cleaning:** Leveraged SQL to filter out null values and duplicates, ensuring the model trained on high-quality, unique track metadata.
+* **Feature Scaling:** Implemented **Min-Max Scaling** directly within the query to normalize features like `popularity`, `tempo`, and `loudness`. By scaling at the database level, I reduced the computational load on the local Python environment.
+* **Feature Engineering:** Initial feature ratios were calculated using SQL window functions to prepare the schema for the KNN and XGBoost models.
+
+### **The Extraction Query**
+Below is the optimized SQL query used to pull and preprocess the data from the cloud:
+
+```sql
+-- Query to clean, scale, and extract music metadata
+CREATE OR REPLACE TABLE `recommendation-engine-488319.spotify.cleaned_spotify_data` AS
+WITH base_data AS (
+  SELECT 
+    track_id,
+    track_name,
+    artists,
+    track_genre,
+    popularity,
+    danceability,
+    energy,
+    speechiness,
+    acousticness,
+    instrumentalness,
+    valence,
+    tempo,
+    loudness
+  FROM `recommendation-engine-488319.spotify.raw_spotify_data`
+  WHERE track_name IS NOT NULL 
+    AND artists IS NOT NULL
+),
+deduplicated AS (
+  -- Keeps only the most popular version of a song to avoid redundant recommendations
+  SELECT * FROM base_data
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY track_name, artists ORDER BY popularity DESC) = 1
+)
+SELECT 
+    track_id,
+    track_name,
+    artists,
+    track_genre,
+    -- Core Features (already 0-1)
+    danceability,
+    energy,
+    speechiness,
+    acousticness,
+    instrumentalness,
+    valence,
+    -- Normalized Features (scaling based on standard Spotify ranges)
+    (popularity - 0) / (100 - 0) AS norm_popularity,
+    (tempo - 0) / (250 - 0) AS norm_tempo,
+    (loudness - (-60)) / (0 - (-60)) AS norm_loudness
+FROM deduplicated;
+
 
